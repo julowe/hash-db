@@ -476,5 +476,9 @@ if __name__ == '__main__':
     parser_export.set_defaults(func=export)
 
     args = parser.parse_args()
+    if "func" not in args:
+        parser.print_help()
+        exit(1)
+
     db = HashDatabase(Path(getcwd()))
     args.func(db, args)
