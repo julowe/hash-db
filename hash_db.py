@@ -30,6 +30,8 @@ IMPORT_FILENAME_PATTERNS = [
     'DIGESTS.asc'
 ]
 HASH_FUNCTION = hashlib.sha512
+# 16 MiB, rounded down to a multiple of the hash's block size
+CHUNK_SIZE = int(16777216 / HASH_FUNCTION().block_size) * HASH_FUNCTION().block_size
 # Mostly used for importing from saved hash files
 EMPTY_FILE_HASH = ('cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce'
                    '47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e')
@@ -109,7 +111,11 @@ class HashEntry:
             if lstat(str(self.filename)).st_size > 0:
                 with self.filename.open('rb') as f:
                     with mmap(f.fileno(), 0, access=ACCESS_READ) as m:
-                        return HASH_FUNCTION(m).hexdigest()
+                        hash = HASH_FUNCTION()
+                        for chunk in iter(lambda: m.read(CHUNK_SIZE), b''):
+                            hash.update(chunk)
+
+                        return hash.hexdigest()
             else:
                 return EMPTY_FILE_HASH
         elif self.filename.is_symlink():
