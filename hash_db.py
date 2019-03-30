@@ -281,9 +281,15 @@ class HashDatabase:
                     if entry != st:
                         modified.add(entry)
                 else:
-                    entry = HashEntry(abs_filename)
-                    entry.update_attrs()
-                    added.add(entry)
+                    try:
+                        entry = HashEntry(abs_filename)
+                        entry.update_attrs()
+                        added.add(entry)
+                    except FileNotFoundError:
+                        # If file was removed between listing and processing,
+                        # just treat it as if it never existed
+                        # We have nothing to compare it to anyway
+                        pass
         removed = set(self.entries.values()) - existing_files
         return added, removed, modified
 
@@ -298,11 +304,20 @@ class HashDatabase:
         [2] modified files
         """
         added, removed, modified = self._find_changes()
+        # Make a new list of added files containing ones that
+        # actually were added
+        added_real = set()
         for entry in added:
-            entry.update()
-            self.entries[entry.filename] = entry
+            # If file was removed between listing and processing,
+            # just treat it as if it never existed
+            # We have nothing to compare it to anyway
+            if entry.exists():
+                entry.update()
+                self.entries[entry.filename] = entry
+                added_real.add(entry)
         for entry in removed:
             del self.entries[entry.filename]
+        added = added_real
         # Entries will appear in 'modified' if the size, mtime or type
         # change. I've seen a lot of spurious mtime mismatches on vfat
         # filesystems (like on USB flash drives), so only report files
