@@ -17,26 +17,27 @@ try:
 except ImportError:
     from os import walk
 
-HASH_FILENAME = 'SHA512SUM'
+HASH_FUNCTION = hashlib.sha512
+
+HASH_NAME = HASH_FUNCTION().name
+HASH_FILENAME = HASH_NAME.upper() + 'SUM'
 DB_FILENAME = 'hash_db.json'
 # fnmatch patterns, specifically:
 IMPORT_FILENAME_PATTERNS = [
     DB_FILENAME,
     HASH_FILENAME,
     HASH_FILENAME + '.asc',
-    '*.sha512sum',
-    '*.sha512sum.asc',
+    '*.' + HASH_NAME + 'sum',
+    '*.' + HASH_NAME + 'sum.asc',
     'DIGESTS',
     'DIGESTS.asc'
 ]
-HASH_FUNCTION = hashlib.sha512
 # 16 MiB, rounded down to a multiple of the hash's block size
 CHUNK_SIZE = int(16777216 / HASH_FUNCTION().block_size) * HASH_FUNCTION().block_size
 # Mostly used for importing from saved hash files
-EMPTY_FILE_HASH = ('cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce'
-                   '47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e')
+EMPTY_FILE_HASH = HASH_FUNCTION(b'').hexdigest()
 SURROGATE_ESCAPES = re.compile(r'([\udc80-\udcff])')
-SHA512_HASH_PATTERN = re.compile(r'^[0-9a-fA-F]{128}$')
+HASH_PATTERN = re.compile(r'^[0-9a-fA-F]{' + str(HASH_FUNCTION().digest_size * 2) + '}$')
 
 ADDED_COLOR = '\033[01;32m'
 REMOVED_COLOR = '\033[01;34m'
@@ -52,7 +53,7 @@ def read_saved_hashes(hash_file: Path) -> dict:
     with hash_file.open('rb') as f:
         for line in f:
             pieces = fsdecode(line).strip().split('  ', 1)
-            if not SHA512_HASH_PATTERN.match(pieces[0]):
+            if not HASH_PATTERN.match(pieces[0]):
                 continue
             filename, file_hash = normpath(pieces[1]).replace('\\\\', '\\'), pieces[0]
             file_path = (hash_file.parent / filename).absolute()
