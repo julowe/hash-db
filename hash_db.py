@@ -17,16 +17,16 @@ try:
 except ImportError:
     from os import walk
 
+#TODO add argument to choose hash function? then also store in db? or just check format/length of hashes?
+#TODO also add check when loading database that hash function specified matches hashes in db
 #HASH_FUNCTION = hashlib.sha512
 HASH_FUNCTION = hashlib.sha256 
 
 HASH_NAME = HASH_FUNCTION().name
 HASH_FILENAME = HASH_NAME.upper() + 'SUM'
-#DB_FILENAME = 'hash_db.json'
 DB_DEFAULT_FILENAME = getenv('HASH_DB_DEFAULT_FILE') if getenv('HASH_DB_DEFAULT_FILE') else 'hash_db.json'
 # fnmatch patterns, specifically:
 IMPORT_FILENAME_PATTERNS = [
-    #DB_FILENAME,
     DB_DEFAULT_FILENAME,
     HASH_FILENAME,
     HASH_FILENAME + '.asc',
@@ -188,6 +188,7 @@ class HashDatabase:
             self.path = path
         self.entries = {}
         self.version = DATABASE_VERSION
+        #TODO add url to github repo into db file, so if a user just opens up the json bd file, they have a chance of knowing what program to use it with
 
     def save(self):
         filename = self.path / self.args.jsondb
@@ -276,6 +277,7 @@ class HashDatabase:
         for dirpath_str, _, filenames in walk(str(self.path)):
             dirpath = Path(dirpath_str)
             for filename in filenames:
+                #TODO either add SHA(256|512)SUM or expand to allow list of ignore files
                 if filename == self.args.jsondb:
                     continue
                 abs_filename = (dirpath / filename).absolute()
@@ -327,6 +329,7 @@ class HashDatabase:
         # change. I've seen a lot of spurious mtime mismatches on vfat
         # filesystems (like on USB flash drives), so only report files
         # as modified if the hash changes.
+        #TODO add err output that this occured? or only if mtime changed and hash didn't?
         content_modified = set()
         for entry in modified:
             old_hash = entry.hash
@@ -416,7 +419,6 @@ def print_file_lists(added, removed, modified):
 def init(db, args):
     try:
         db.load()
-        #print('Database exists, run update function instead. Stopping execution.')
         exit('Database exists, run update function instead. Stopping execution.')
     except FileNotFoundError:
         print('Initializing hash database')
@@ -481,6 +483,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--pretend', action='store_true')
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-j', '--jsondb', help='JSON database file. Default: {}'.format(DB_DEFAULT_FILENAME), default=DB_DEFAULT_FILENAME)
+    #TODO add argument for path, at least one but preferably path for data to hash and path to json hash db file
     subparsers = parser.add_subparsers()
 
     parser_init = subparsers.add_parser('init')
