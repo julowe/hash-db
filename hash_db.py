@@ -10,7 +10,7 @@ from os.path import normpath
 from pathlib import Path
 import re
 from stat import S_ISLNK, S_ISREG
-from sys import stderr
+from sys import stderr, exit
 
 try:
     from scandir import walk
@@ -414,7 +414,13 @@ def print_file_lists(added, removed, modified):
         print_file_list(modified)
 
 def init(db, args):
-    print('Initializing hash database')
+    try:
+        db.load()
+        #print('Database exists, run update function instead. Stopping execution.')
+        exit('Database exists, run update function instead. Stopping execution.')
+    except FileNotFoundError:
+        print('Initializing hash database')
+
     added, removed, modified = db.update()
     if args.verbose:
         print_file_lists(added, removed, modified)
