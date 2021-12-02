@@ -17,7 +17,8 @@ try:
 except ImportError:
     from os import walk
 
-HASH_FUNCTION = hashlib.sha512
+#HASH_FUNCTION = hashlib.sha512
+HASH_FUNCTION = hashlib.sha256 
 
 HASH_NAME = HASH_FUNCTION().name
 HASH_FILENAME = HASH_NAME.upper() + 'SUM'
