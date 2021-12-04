@@ -191,11 +191,12 @@ class HashDatabase:
             self.path = path
         self.entries = {}
         self.version = DATABASE_VERSION
-        #TODO add url to github repo into db file, so if a user just opens up the json db file, they have a chance of knowing what program to use it with
+        self.info_url = "https://github.com/julowe/hash-db"
 
     def save(self):
         filename = self.path / self.args.jsondb
         data = {
+            'info_url': self.info_url,
             'version': self.version,
             'files': {
                 str(entry.filename.relative_to(self.path)): {
@@ -231,6 +232,7 @@ class HashDatabase:
             data = json.load(f)
         #TODO do some basic checking of json structure to make sure it's not only a json file, but also correctly constructed for this program?
         self.version = data['version']
+        #self.info_url = data['info_url'] #TODO decide if bumping version of DB is right, or if a check if this field exists before trying to load makes more sense. prob latter... or both? for now not as important, not reading in will just overwrite this field that isn't sent by any other version of the script (yet)
         for filename, entry_data in data['files'].items():
             entry = HashEntry((self.path / filename).absolute())
             entry.size = entry_data.get('size')
