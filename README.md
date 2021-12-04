@@ -34,8 +34,13 @@ Usage
 The basic invocation of the script is of the form
 
 ```
-hash_db.py [global options] command [command-specific options]
+hash_db.py -d PATH [global options] command [command-specific options]
 ```
+
+* `--data-dir` or `-d`
+
+  The path to the directory and sub-directories you wish to hash. This is 
+  a required parameter.
 
 Global Options
 --------------
@@ -61,6 +66,7 @@ Commands
   Creates a hash database in the current directory. Walks the directory tree
   and adds all files to the database. After completion, prints the list of
   added files.
+
 * `update`
 
   Reads the hash database into memory and walks the directory tree to find any
@@ -69,6 +75,7 @@ Commands
   a size or modification time that don't match the recorded values. Entries in
   the database are added, updated or modified as appropriate, and the new
   database is written to disk.
+
 * `status`
 
   Reports added, modified, and removed files without performing any file
@@ -78,12 +85,14 @@ Commands
   spurious mtime changes, and `status` necessarily will report such files.
   `hash_db.py --pretend update` can be used to filter these false positives at
   the cost of hashing each apparently-modified file.
+
 * `verify`
 
   Reads the hash database into memory and hashes each file on disk. Reports
   each hash mismatch or file removal.
 
   Options:
+
   * `--verbose-failures`
 
     If hash verification fails, print filenames as soon as they are known in
@@ -93,6 +102,7 @@ Commands
 
     If hash verification of a file succeeds, update its stored modification
     time to match that of the file on disk.
+
 * `import`
 
   Initializes a hash database from external hash files. Recognizes the
@@ -109,6 +119,7 @@ Commands
   Finds all hash files matching those patterns, and reads the contents of each
   into a single hash database. The size and modification time of each file in
   the hash database is read from disk, but the saved hashes are used as-is.
+
 * `split`
 
   Required argument: `subdir`.
@@ -116,6 +127,7 @@ Commands
   Reads the hash database into memory, identifies entries that are contained in
   `subdir`, and writes the reduced hash database to `subdir/hash_db.json` with
   relative paths.
+
 * `export`
 
   Writes hash entries to a `SHA512SUM` file in the same directory as
