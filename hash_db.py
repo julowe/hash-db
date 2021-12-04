@@ -5,7 +5,7 @@ from fnmatch import fnmatch
 import hashlib
 import json
 from mmap import mmap, ACCESS_READ
-from os import fsdecode, fsencode, getcwd, lstat, readlink, stat_result, getenv
+from os import fsdecode, fsencode, lstat, readlink, stat_result, getenv
 from os.path import normpath
 from pathlib import Path
 import re
@@ -487,11 +487,12 @@ def export(db, args):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
+    parser.add_argument('-d', '--data-dir', required='True', type=Path)
+    #Hmm, so the json hash db has relative paths to files. so is -d required for all functions, or not for export? or also not for split with some reworking? or import? see TODO note below about mismatched json hash db files and data-dirs
     #TODO maybe change pretend to dry-run if it continues to trip me up when I read it
     parser.add_argument('-n', '--pretend', action='store_true')
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-j', '--jsondb', help='JSON database file. Default: {}'.format(DB_DEFAULT_FILENAME), default=DB_DEFAULT_FILENAME)
-    #TODO add argument for path, at least one but preferably path for data to hash and path to json hash db file
     #TODO change -jsondb to a full path, not sure why you would want to go searching in the provided path and parent directories for a hash db... if you run it and your getcwd() is a subdir of where the database is, it still verifies/whatever all files in the database (not just those in cwd). not sure if I'm just missing the purpose so not changing yet
     #TODO hmm but allowing a full path for json db file then really opens up the need to check that the json hash db file is matched with the right data dir. If you run update on a hash db and point it to the wrong data dir, it will just list all files in db as removed, and all files in the (incorrect) data-dir as added... which could happen anyway if you move the json hash db, but maybe less likely??
     subparsers = parser.add_subparsers()
@@ -532,5 +533,7 @@ if __name__ == '__main__':
         exit(1)
 
     #TODO move this call to inside functions
-    db = HashDatabase(args, Path(getcwd()))
+    #ugh, yes this is redundant/weird/wrong, but this is the smallest change to make and get it tested and working reliably to handoff for next expedition in one day.
+    #FIXME remove extra path passage, and just use args.data_dir everywhere
+    db = HashDatabase(args, args.data_dir)
     args.func(db, args)
