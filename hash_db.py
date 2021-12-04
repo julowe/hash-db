@@ -24,8 +24,10 @@ HASH_FUNCTION = hashlib.sha256
 
 HASH_NAME = HASH_FUNCTION().name
 HASH_FILENAME = HASH_NAME.upper() + 'SUM'
+#TODO why is this here. why not use arg.jsondb with a default value set in argparser?
 DB_DEFAULT_FILENAME = getenv('HASH_DB_DEFAULT_FILE') if getenv('HASH_DB_DEFAULT_FILE') else 'hash_db.json'
 # fnmatch patterns, specifically:
+#TODO remove after add specification of specific hash file to import from
 IMPORT_FILENAME_PATTERNS = [
     DB_DEFAULT_FILENAME,
     HASH_FILENAME,
@@ -63,6 +65,7 @@ def read_saved_hashes(hash_file: Path) -> dict:
             hashes[file_path] = file_hash
     return hashes
 
+#TODO remove after add specification of specific hash file to import from
 def find_external_hash_files(path: Path):
     for dirpath_str, _, filenames in walk(str(path)):
         dirpath = Path(dirpath_str).absolute()
@@ -188,7 +191,7 @@ class HashDatabase:
             self.path = path
         self.entries = {}
         self.version = DATABASE_VERSION
-        #TODO add url to github repo into db file, so if a user just opens up the json bd file, they have a chance of knowing what program to use it with
+        #TODO add url to github repo into db file, so if a user just opens up the json db file, they have a chance of knowing what program to use it with
 
     def save(self):
         filename = self.path / self.args.jsondb
@@ -223,8 +226,10 @@ class HashDatabase:
 
     def load(self):
         filename = find_hash_db(self.args, self.path)
+        #TODO FIXME fails if not a json file
         with filename.open(encoding='utf-8') as f:
             data = json.load(f)
+        #TODO do some basic checking of json structure to make sure it's not only a json file, but also correctly constructed for this program?
         self.version = data['version']
         for filename, entry_data in data['files'].items():
             entry = HashEntry((self.path / filename).absolute())
@@ -417,6 +422,7 @@ def print_file_lists(added, removed, modified):
         print_file_list(modified)
 
 def init(db, args):
+    #TODO change to just checking for file existence? yup, fails if the file is not a hash db it can read. Is there a time when we care to specifically know that the file is a database, vs just that there is already a (any format) file named that?
     try:
         db.load()
         exit('Database exists, run update function instead. Stopping execution.')
@@ -448,6 +454,7 @@ def import_hashes(db, args):
     overall_count = 0
     for import_filename in find_external_hash_files(Path().absolute()):
         if import_filename.name == args.jsondb:
+            #TODO why would you use this import function on a json hash db?
             temp_db = HashDatabase(import_filename.parent)
             temp_db.load()
             count = len(temp_db.entries)
@@ -480,10 +487,13 @@ def export(db, args):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
+    #TODO maybe change pretend to dry-run if it continues to trip me up when I read it
     parser.add_argument('-n', '--pretend', action='store_true')
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-j', '--jsondb', help='JSON database file. Default: {}'.format(DB_DEFAULT_FILENAME), default=DB_DEFAULT_FILENAME)
     #TODO add argument for path, at least one but preferably path for data to hash and path to json hash db file
+    #TODO change -jsondb to a full path, not sure why you would want to go searching in the provided path and parent directories for a hash db... if you run it and your getcwd() is a subdir of where the database is, it still verifies/whatever all files in the database (not just those in cwd). not sure if I'm just missing the purpose so not changing yet
+    #TODO hmm but allowing a full path for json db file then really opens up the need to check that the json hash db file is matched with the right data dir. If you run update on a hash db and point it to the wrong data dir, it will just list all files in db as removed, and all files in the (incorrect) data-dir as added... which could happen anyway if you move the json hash db, but maybe less likely??
     subparsers = parser.add_subparsers()
 
     parser_init = subparsers.add_parser('init')
@@ -496,6 +506,7 @@ if __name__ == '__main__':
     parser_status.set_defaults(func=status)
 
     parser_import = subparsers.add_parser('import')
+    #TODO change to require that you specify path to import file. fails if hash database. can then remove IMPORT_FILENAME_PATTERNS
     parser_import.set_defaults(func=import_hashes)
 
     parser_verify = subparsers.add_parser('verify')
@@ -512,6 +523,7 @@ if __name__ == '__main__':
     parser_split.set_defaults(func=split)
 
     parser_export = subparsers.add_parser('export')
+    #TODO add ability to optionally specify output path
     parser_export.set_defaults(func=export)
 
     args = parser.parse_args()
@@ -519,5 +531,6 @@ if __name__ == '__main__':
         parser.print_help()
         exit(1)
 
+    #TODO move this call to inside functions
     db = HashDatabase(args, Path(getcwd()))
     args.func(db, args)
