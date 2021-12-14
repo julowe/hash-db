@@ -143,16 +143,27 @@ Python 3.4 or newer.
 Open Issues/TODOs
 =================
 
-* Can not specify path of data to hash, or path to JSON database file
-* Add switch to specify hash function. Also check that function matches hashes 
-  in provided database
+* Can not specify path to JSON database file (json file will remain relative to 
+  -d PATH provided... so just let it fail if user selects wrong path/hashdb? or 
+  mark in hashdb what the rel path is? Then could just load hashdb and get 
+  -d PATH from there... let that be v3 of db? and fall back to base/v1 hashdb 
+  in root of relative dir path otherwise?
+* Add switch to specify hash function (vs current hardcoding). Also check that 
+  the hash function matches hashes in provided database
 * Ignore exported hashsum files (e.g. `SHA512SUM`)
+* Importing a hasdb file seems to be redundant? look at again when not tired.
+* If still paranoid, introduce partial hash verification for balance between 
+  rsync style file change monitoring and expensive rehashing of all files, I 
+  lost the repo to code that hashses first x bytes and last x bytes of a file.
 * During the `verify` operation, it would be nice to pretty-print the number of
   bytes hashed instead of or in addition to the number of files.
-* As mentioned above, my main motivation for writing this script was identifying
-  the extent of filesystem corruption. It's easy to find what's missing after
-  an `fsck`, but it would be much more helpful to hash everything that was
-  dumped into `lost+found` to put these files back where they belong.
+* Are we cpu limited, or disk i/o? Test and then maybe introduce multithreading 
+  code?
+* As mentioned below, [mruffalo's](https://github.com/mruffalo/hash-db) main 
+  motivation for writing this script was identifying the extent of filesystem 
+  corruption. It's easy to find what's missing after an `fsck`, but it would 
+  be much more helpful to hash everything that was dumped into `lost+found` 
+  to put these files back where they belong.
   
   
 Motivation
