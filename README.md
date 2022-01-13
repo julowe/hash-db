@@ -1,19 +1,30 @@
-This script manages a simple database of SHA512 file hashes.
+This script creates and manages a simple database of file hashes. You can 
+edit the code to use any of the alogrithms in 
+[hashlib](https://docs.python.org/3/library/hashlib.html). This code was 
+started by [mruffalo](https://github.com/mruffalo/hash-db), added to by 
+[NHellFire](https://github.com/NHellFire/hash-db) and 
+[pskarin](https://github.com/pskarin/hash-db), and merged together by 
+[julowe](https://github.com/julowe/hash-db) with some error handling 
+additions. 
 
 Intro
 =====
 
-One can hash all files in a directory (and all subdirectories) quite easily
+One could hash all files in a directory (and all subdirectories) quite easily
 with a shell alias like the following:
 
-    alias sha512sum-all='find . '\''!'\'' -name SHA512SUM -type f -exec sha512sum {} + >> SHA512SUM'
+```
+alias sha512sum-all='find . '\''!'\'' -name SHA512SUM -type f -exec sha512sum {} + >> SHA512SUM'
+```
 
 However, updating this SHA512SUM file is not particularly efficient if we'd
 like to avoid rehashing every file in the directory tree. Writing a script to
 add and remove entries is relatively easy, but it would also be nice to update
 the hashes for files that have changed. Using a plain SHA512SUM file makes it
 quite difficult to identify files that have been modified, so this script
-stores additional file metadata and stores the hashes in JSON format.
+stores the size, modification time, and hashes of files in JSON formatted 
+file. This script can then also export a SHA512SUM file for use by other 
+hashing programs. 
 
 Motivation
 ==========
@@ -57,14 +68,25 @@ Usage
 
 The basic invocation of the script is of the form
 
-    hash_db.py [global options] command [command-specific options]
+```
+hash_db.py -d PATH [global options] command [command-specific options]
+```
 
 Global Options
 --------------
 
-* `--pretend`
+* `--pretend` or `-n`
 
-  Omits writing the (new or modified) database to disk.
+  Omits writing the (new or modified) database to disk. Simulation/dry-run.
+  
+* `--verbose` or `-v`
+
+  If verbose is specified, the init & update functions will then print 
+  lists of Added, Removed, and Modified files.
+  
+* `--jsondb` or `-j`
+
+  Used to specify name of JSON file database, defaults to `hash_db.json`
 
 Commands
 --------
@@ -74,6 +96,7 @@ Commands
   Creates a hash database in the current directory. Walks the directory tree
   and adds all files to the database. After completion, prints the list of
   added files.
+
 * `update`
 
   Reads the hash database into memory and walks the directory tree to find any
@@ -82,6 +105,7 @@ Commands
   a size or modification time that don't match the recorded values. Entries in
   the database are added, updated or modified as appropriate, and the new
   database is written to disk.
+
 * `status`
 
   Reports added, modified, and removed files without performing any file
@@ -91,6 +115,7 @@ Commands
   spurious mtime changes, and `status` necessarily will report such files.
   `hash_db.py --pretend update` can be used to filter these false positives at
   the cost of hashing each apparently-modified file.
+
 * `verify`
 
   Reads the hash database into memory and hashes each file on disk. Reports
@@ -106,6 +131,7 @@ Commands
 
     If hash verification of a file succeeds, update its stored modification
     time to match that of the file on disk.
+
 * `import`
 
   Initializes a hash database from external hash files. Recognizes the
@@ -122,6 +148,7 @@ Commands
   Finds all hash files matching those patterns, and reads the contents of each
   into a single hash database. The size and modification time of each file in
   the hash database is read from disk, but the saved hashes are used as-is.
+
 * `split`
 
   Required argument: `subdir`.
@@ -129,6 +156,7 @@ Commands
   Reads the hash database into memory, identifies entries that are contained in
   `subdir`, and writes the reduced hash database to `subdir/hash_db.json` with
   relative paths.
+
 * `export`
 
   Writes hash entries to a `SHA512SUM` file in the same directory as
