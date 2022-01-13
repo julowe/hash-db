@@ -65,7 +65,7 @@ def read_saved_hashes(hash_file: Path) -> dict:
             hashes[file_path] = file_hash
     return hashes
 
-#TODO remove after add specification of specific hash file to import from
+#TODO remove after add specification of specific hash file to import from. or could this be useful if you are aggregating several dirs, some of which have hashsum files in them but not all?
 def find_external_hash_files(path: Path):
     for dirpath_str, _, filenames in walk(str(path)):
         dirpath = Path(dirpath_str).absolute()
@@ -74,6 +74,7 @@ def find_external_hash_files(path: Path):
                 yield dirpath / filename
 
 def find_hash_db_r(args, path: Path) -> Path:
+    #TODO: don't search directories - use import for that?? or just require hashdb to be in root of data dir if you don't specify otherwise
     """
     Searches the given path and all of its parent
     directories to find a filename matching args.jsondb
@@ -232,7 +233,7 @@ class HashDatabase:
             data = json.load(f)
         #TODO do some basic checking of json structure to make sure it's not only a json file, but also correctly constructed for this program?
         self.version = data['version']
-        #self.info_url = data['info_url'] #TODO decide if bumping version of DB is right, or if a check if this field exists before trying to load makes more sense. prob latter... or both? for now not as important, not reading in will just overwrite this field that isn't sent by any other version of the script (yet)
+        #self.info_url = data['info_url'] #TODO decide if bumping version of DB is right, or if a check if this field exists before trying to load makes more sense. prob latter... or both? for now not as important, not reading in will just overwrite this field that isn't set by any other version of the script (yet)
         for filename, entry_data in data['files'].items():
             entry = HashEntry((self.path / filename).absolute())
             entry.size = entry_data.get('size')
@@ -377,6 +378,7 @@ class HashDatabase:
                 if entry.verify():
                     entry.update_attrs()
                 else:
+                    #TODO add 'very verbose' option? would output size and mod date of file from hash DB and what is on disk. and expected and returned hash?
                     if verbose_failures:
                         stderr.write('\r{} failed hash verification\n'.format(entry.filename))
                     modified.add(entry.filename)
@@ -423,11 +425,18 @@ def print_file_lists(added, removed, modified):
         print(MODIFIED_COLOR + 'Modified files:' + NO_COLOR)
         print_file_list(modified)
 
+
+##
+## Wrapper Functions, called by command line arguments
+##
+
 def init(db, args):
+    #TODO if allow relative data path to be stored in json file, then add switch here as to what version of db file to create. default to latest, but allow all. or just some?
     #TODO change to just checking for file existence? yup, fails if the file is not a hash db it can read. Is there a time when we care to specifically know that the file is a database, vs just that there is already a (any format) file named that?
     try:
         db.load()
         exit('Database exists, run update function instead. Stopping execution.')
+        #exit('Filename exists, run update or status function instead. Stopping execution.')
     except FileNotFoundError:
         print('Initializing hash database')
 
@@ -452,6 +461,7 @@ def status(db, args):
     print_file_lists(added, removed, modified)
 
 def import_hashes(db, args):
+    #TODO this could be borked if importing sha256sum and a hashdb with sha512 hashes. or would the hash just be read later as 'not matching' and recomputed?
     print('Importing hashes')
     overall_count = 0
     for import_filename in find_external_hash_files(Path().absolute()):
