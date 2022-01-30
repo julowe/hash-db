@@ -21,19 +21,7 @@ HASH_FUNCTION = hashlib.sha512
 
 HASH_NAME = HASH_FUNCTION().name
 HASH_FILENAME = HASH_NAME.upper() + 'SUM'
-#DB_FILENAME = 'hash_db.json'
-DB_DEFAULT_FILENAME = getenv('HASH_DB_DEFAULT_FILE') if getenv('HASH_DB_DEFAULT_FILE') else 'hash_db.json'
-# fnmatch patterns, specifically:
-IMPORT_FILENAME_PATTERNS = [
-    #DB_FILENAME,
-    DB_DEFAULT_FILENAME,
-    HASH_FILENAME,
-    HASH_FILENAME + '.asc',
-    '*.' + HASH_NAME + 'sum',
-    '*.' + HASH_NAME + 'sum.asc',
-    'DIGESTS',
-    'DIGESTS.asc'
-]
+
 # 16 MiB, rounded down to a multiple of the hash's block size
 CHUNK_SIZE = int(16777216 / HASH_FUNCTION().block_size) * HASH_FUNCTION().block_size
 # Mostly used for importing from saved hash files
@@ -62,7 +50,7 @@ def read_saved_hashes(hash_file: Path) -> dict:
             hashes[file_path] = file_hash
     return hashes
 
-def find_external_hash_files(path: Path):
+def find_external_hash_files(path: Path, IMPORT_FILENAME_PATTERNS):
     for dirpath_str, _, filenames in walk(str(path)):
         dirpath = Path(dirpath_str).absolute()
         for filename in filenames:
@@ -412,6 +400,11 @@ def print_file_lists(added, removed, modified):
         print(MODIFIED_COLOR + 'Modified files:' + NO_COLOR)
         print_file_list(modified)
 
+
+##
+## Wrapper Functions, called by command line arguments
+##
+
 def init(db, args):
     try:
         db.load()
@@ -442,9 +435,20 @@ def status(db, args):
 def import_hashes(db, args):
     print('Importing hashes')
     overall_count = 0
-    for import_filename in find_external_hash_files(Path().absolute()):
+
+    import_filename_list = [
+        args.jsondb,
+        HASH_FILENAME,
+        HASH_FILENAME + '.asc',
+        '*.' + HASH_NAME + 'sum',
+        '*.' + HASH_NAME + 'sum.asc',
+        'DIGESTS',
+        'DIGESTS.asc'
+    ]
+
+    for import_filename in find_external_hash_files(Path().absolute(), import_filename_list):
         if import_filename.name == args.jsondb:
-            temp_db = HashDatabase(import_filename.parent)
+            temp_db = HashDatabase(args, import_filename.parent)
             temp_db.load()
             count = len(temp_db.entries)
             db.entries.update(temp_db.entries)
@@ -478,7 +482,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-n', '--pretend', action='store_true')
     parser.add_argument('-v', '--verbose', action='store_true')
-    parser.add_argument('-j', '--jsondb', help='JSON database file. Default: {}'.format(DB_DEFAULT_FILENAME), default=DB_DEFAULT_FILENAME)
+    parser.add_argument('-j', '--jsondb', help='JSON database file. Default: %(default)s', default='hash_db.json')
     subparsers = parser.add_subparsers()
 
     parser_init = subparsers.add_parser('init')
