@@ -210,7 +210,11 @@ class HashDatabase:
     def load(self):
         filename = find_hash_db(self.args, self.path)
         with filename.open(encoding='utf-8') as f:
-            data = json.load(f)
+            try:
+                data = json.load(f)
+            except ValueError as err:
+                #raise Exception("Could not read JSON data from: " + args.jsondb)
+                exit("Received `ValueError` when attempting to read JSON data from: " + args.jsondb)
         self.version = data['version']
         for filename, entry_data in data['files'].items():
             entry = HashEntry((self.path / filename).absolute())
