@@ -6,7 +6,7 @@ import hashlib
 import json
 from mmap import mmap, ACCESS_READ
 from os import fsdecode, fsencode, getcwd, lstat, readlink, stat_result, getenv
-from os.path import normpath
+from os.path import exists, normpath
 from pathlib import Path
 import re
 from stat import S_ISLNK, S_ISREG
@@ -410,11 +410,10 @@ def print_file_lists(added, removed, modified):
 ##
 
 def init(db, args):
-    try:
-        db.load()
-        exit('Database exists, run update function instead. Stopping execution.')
-    except FileNotFoundError:
-        print('Initializing hash database')
+    if exists(args.jsondb):
+        exit("File: `" + args.jsondb + "` aleady exists. Rename file or choose a different name for new hash DB.")
+
+    print('Initializing hash database')
 
     added, removed, modified = db.update()
     if args.verbose:
